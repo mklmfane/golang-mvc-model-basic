@@ -1,4 +1,4 @@
-name: Go CI with Docker Compose then native Go
+name: Go CI with Docker Compose split into Build, Test, Run
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 jobs:
 
   # -----------------------------------
-  # 1. Build stage: build Docker images + bring up Docker Compose
+  # 1. Build stage: build Docker images and bring up Postgres
   # -----------------------------------
   build:
     runs-on: ubuntu-latest
@@ -26,8 +26,20 @@ jobs:
     - name: Start Docker Compose stack
       run: docker compose up -d
 
+    - name: Wait for Postgres to be ready
+      run: |
+        echo "Waiting for Postgres to accept connections..."
+        for i in {1..15}; do
+          if pg_isready -h 127.0.0.1 -p 5432 -U myuser -d mydatabase; then
+            echo "Postgres is ready!"
+            break
+          fi
+          echo "Postgres not ready yet... retrying"
+          sleep 2
+        done
+
   # -----------------------------------
-  # 2. Test stage: run local Go tests
+  # 2. Test stage: local Go build & tests
   # -----------------------------------
   test:
     runs-on: ubuntu-latest
@@ -41,11 +53,14 @@ jobs:
       with:
         go-version: '1.24.4'
 
+    - name: Build Go project
+      run: go build -v ./...
+
     - name: Test Go project
       run: go test -v ./...
 
   # -----------------------------------
-  # 3. Run stage: run your program
+  # 3. Run stage: run the application
   # -----------------------------------
   run:
     runs-on: ubuntu-latest
@@ -61,3 +76,8 @@ jobs:
 
     - name: Run Go program
       run: go run main.go
+
+    # Always shut down stack to avoid leftover containers
+    - name: Shutdown Docker Compose
+      if: always()
+      run: docker compose down -v
