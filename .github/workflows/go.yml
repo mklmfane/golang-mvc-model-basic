@@ -1,7 +1,4 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
-name: Go
+name: Go CI with Docker Compose first, then Go
 
 on:
   push:
@@ -10,19 +7,48 @@ on:
     branches: [ "master" ]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
 
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # ---------------------------
+    # Set up Docker
+    # ---------------------------
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    # ---------------------------
+    # Build and start Docker Compose stack
+    # ---------------------------
+    - name: Build Docker Compose services
+      run: docker compose build --no-cache
+
+    - name: Start Docker Compose in detached mode
+      run: docker compose up -d
+
+    # ---------------------------
+    # Now set up native Go on runner
+    # ---------------------------
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: '1.24.4'
 
-    - name: Build
+    # ---------------------------
+    # Run Go build and tests
+    # ---------------------------
+    - name: Build Go project locally
       run: go build -v ./...
 
-    - name: Test
+    - name: Test Go project locally
       run: go test -v ./...
+
+    # ---------------------------
+    # Clean up Docker Compose
+    # ---------------------------
+    # - name: Shutdown Docker Compose
+    #   if: always()
+    #   run: docker compose down -v
