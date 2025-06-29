@@ -1,6 +1,8 @@
+version: "3.9"
+
 services:
   postgres:
-    image: postgres:16
+    image: myapp-postgres:latest
     container_name: postgres_db
     restart: always
     environment:
@@ -8,8 +10,7 @@ services:
       POSTGRES_PASSWORD: mypassword
       POSTGRES_DB: mydatabase
     ports:
-      - "0.0.0.0:5432:5432"
-      - "[::]:5432:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,34 +20,18 @@ services:
       retries: 5
 
   go-app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    environment:
-      - DB_HOST
-      - DB_PORT
-      - DB_USER
-      - DB_PASSWORD
-      - DB_NAME
+    build: .
+    image: myapp-go-app:latest
     depends_on:
       postgres:
         condition: service_healthy
-    command: ["go", "run", "main.go"]
 
   go-test:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    environment:
-      - DB_HOST
-      - DB_PORT
-      - DB_USER
-      - DB_PASSWORD
-      - DB_NAME
+    build: .
+    image: myapp-go-test:latest
     depends_on:
       postgres:
         condition: service_healthy
-    command: ["go", "test", "-v", "./..."]
 
 volumes:
   postgres_data:
