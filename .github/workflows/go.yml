@@ -1,4 +1,4 @@
-name: Go CI with Docker Compose split into Build, Test, Run
+name: Go CI with separate Build, Test, and Run stages without duplicate Docker Compose build
 
 on:
   push:
@@ -8,30 +8,46 @@ on:
 
 jobs:
 
-  # -------------------------
-  # 1. Build stage
-  # -------------------------
+  # -------------------------------
+  # 1. Build stage: build Docker images
+  # -------------------------------
   build:
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - uses: docker/setup-buildx-action@v3
 
-    - name: Build Docker Compose services
-      run: docker compose build --no-cache
-
-  # -------------------------
-  # 2. Test stage
-  # -------------------------
-  test:
-    runs-on: ubuntu-latest
-    needs: build
     steps:
     - uses: actions/checkout@v4
     - uses: docker/setup-buildx-action@v3
 
     - name: Build Docker Compose services
       run: docker compose build
+
+    - name: Save built Docker images to archive
+      run: docker save -o images.tar $(docker compose images -q)
+
+    - name: Upload Docker image artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-images
+        path: images.tar
+
+  # -------------------------------
+  # 2. Test stage: uses built images, runs tests
+  # -------------------------------
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: docker/setup-buildx-action@v3
+
+    - name: Download Docker image artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: docker-images
+
+    - name: Load Docker images into local Docker
+      run: docker load -i images.tar
 
     - name: Start Docker Compose stack
       run: docker compose up -d
@@ -63,18 +79,24 @@ jobs:
       if: always()
       run: docker compose down -v
 
-  # -------------------------
-  # 3. Run stage
-  # -------------------------
+  # -------------------------------
+  # 3. Run stage: uses built images, runs app
+  # -------------------------------
   run:
     runs-on: ubuntu-latest
     needs: test
+
     steps:
     - uses: actions/checkout@v4
     - uses: docker/setup-buildx-action@v3
 
-    - name: Build Docker Compose services
-      run: docker compose build
+    - name: Download Docker image artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: docker-images
+
+    - name: Load Docker images into local Docker
+      run: docker load -i images.tar
 
     - name: Start Docker Compose stack
       run: docker compose up -d
