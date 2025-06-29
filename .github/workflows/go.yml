@@ -46,6 +46,8 @@ jobs:
     - name: Test Go project locally
       run: go test -v ./...
 
+    - name: Test program locally
+      run: go run main.go  
     # ---------------------------
     # Clean up Docker Compose
     # ---------------------------
