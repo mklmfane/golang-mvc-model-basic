@@ -22,7 +22,7 @@ jobs:
       run: docker compose build
 
     - name: Save built Docker images to archive
-      run: docker save -o images.tar $(docker compose images -q)
+      run: docker save -o images.tar $(docker compose config --services | xargs -I {} docker compose images -q {})
 
     - name: Upload Docker image artifact
       uses: actions/upload-artifact@v4
