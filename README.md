@@ -1,7 +1,3 @@
-Absolutely! Here’s your **entire content cleaned up and reformatted in proper Markdown** with fenced code blocks, headings, bullet points, and no stray text.
-You can paste this directly into a `README.md`.
-
----
 
 ```markdown
 # Go + PostgreSQL + sqlc Example: MVC Architecture
@@ -237,14 +233,6 @@ This project is a clean example of structuring Go projects with:
 ---
 
 🎯 **Done.**
-If you’d like, we can also add a `Makefile` for easier dev commands (migrate, generate, run).
-Want that? 🚀 Just say so!
 
-```
 
----
-
-✅ **Done.**  
-Copy this **directly** into your `README.md` — it’s fully Markdown-compliant.  
-If you’d like, I can even generate this as a downloadable file for you. Want that? 🚀 Just tell me!
 ```
