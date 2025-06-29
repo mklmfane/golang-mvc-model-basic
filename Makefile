@@ -45,6 +45,25 @@ clean:
 	docker-compose down -v
 
 # ---------------------------------------------------
-# Convenience target for reset
+# Wait for DB
+.PHONY: wait-for-db
+wait-for-db:
+	@echo "⏳ Waiting for PostgreSQL to be ready..."
+	@until docker exec postgres_db pg_isready -U myuser -d mydatabase > /dev/null 2>&1; do \
+		echo "🔄 Waiting for db..."; \
+		sleep 1; \
+	done
+	@echo "✅ PostgreSQL is ready."
+
+# ---------------------------------------------------
+# Convenience targets
 .PHONY: reset
 reset: clean up
+
+.PHONY: dev
+dev:
+	@echo "🚀 Running full dev environment (reset DB, generate code, wait for DB, run app)..."
+	make reset
+	make wait-for-db
+	make generate
+	make run
